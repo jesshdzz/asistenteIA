@@ -1,0 +1,23 @@
+services:
+  database:
+    image: mysql:9.1.0
+    container_name: final_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: final_phpmyadmin
+    environment:
+      PMA_HOST: database
+    ports:
+      - "${PHPMYADMIN_PORT}:80"
+    depends_on:
+      - database
