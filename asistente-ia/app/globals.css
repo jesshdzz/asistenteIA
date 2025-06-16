@@ -3,3 +3,9 @@
 @plugin "daisyui" {
   themes: pastel --default;
 }
+
+/* css debug */
+/* * {
+  box-sizing: border-box;
+  outline:1px solid red;
+} */

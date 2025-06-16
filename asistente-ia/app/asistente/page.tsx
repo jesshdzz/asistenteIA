@@ -1,17 +1,24 @@
+// app/page.tsx
 "use client";
 
-import { useState, useRef } from "react";
 import { detectarYEjecutarAccion } from "@/lib/comandos";
+import { useState, useRef, useCallback } from "react";
 
 export default function Home() {
     const [transcripcion, setTranscripcion] = useState("");
     const [respuesta, setRespuesta] = useState("");
     const [grabando, setGrabando] = useState(false);
+    const [estado, setEstado] = useState("esperando");
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
+    const detenerRef = useRef(false);
+    const streamRef = useRef<MediaStream | null>(null);
 
-    const iniciarGrabacion = async () => {
+    const iniciarGrabacion = useCallback(async () => {
+        detenerRef.current = false;
+        setEstado("escuchando");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
@@ -21,41 +28,66 @@ export default function Home() {
         };
 
         mediaRecorder.onstop = async () => {
+            if (detenerRef.current) return;
+            setEstado("procesando");
             const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
             const formData = new FormData();
             formData.append("audio", blob);
 
-            const res = await fetch("/api/deepgram", {
-                method: "POST",
-                body: formData,
-            });
-            const data = await res.json();
-            setTranscripcion(data.transcripcion);
+            try {
+                const res = await fetch("/api/deepgram/stt", {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await res.json();
+                setTranscripcion(data.transcripcion);
 
-            const chatRes = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mensaje: data.transcripcion }),
-            });
-            const chatData = await chatRes.json();
-            console.log("Respuesta de Gemini:", chatData);
-            // Detectar y ejecutar acción (si hay)
-            const textoParaHablar = detectarYEjecutarAccion(chatData.accion  || chatData.respuesta);
-            setRespuesta(textoParaHablar);
+                const chatRes = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mensaje: data.transcripcion }),
+                });
+                const chatData = await chatRes.json();
+                // Detectar y ejecutar acción (si hay)
+                const textoParaHablar = detectarYEjecutarAccion(chatData.accion || chatData.respuesta);
+                setRespuesta(textoParaHablar);
 
-            // Hablar la respuesta
-            const synth = window.speechSynthesis;
-            const utter = new SpeechSynthesisUtterance(textoParaHablar);
-            utter.lang = "es-ES";
-            synth.speak(utter);
+                // Hablar la respuesta
+                setEstado("hablando");
+                const synth = window.speechSynthesis;
+                const utter = new SpeechSynthesisUtterance(textoParaHablar);
+                utter.lang = "es-ES";
+                utter.voice = synth.getVoices().find(voice => voice.name === "Google español") || synth.getVoices()[0];
+                synth.speak(utter);
+
+                utter.onend = () => {
+                    if (!detenerRef.current) {
+                        iniciarGrabacion();
+                    } else {
+                        setEstado("esperando");
+                    }
+                };
+            } catch (error) {
+                setRespuesta("Ocurrió un error procesando el audio:" + error);
+                setEstado("esperando");
+            }
         };
 
         mediaRecorder.start();
         setGrabando(true);
-    };
+
+        setTimeout(() => {
+            if (mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                setGrabando(false);
+            }
+        }, 4000); // 4 segundos de grabación por ciclo
+    }, []); // <-- Cierra el useCallback
 
     const detenerGrabacion = () => {
+        detenerRef.current = true;
         mediaRecorderRef.current?.stop();
+        streamRef.current?.getTracks().forEach((track) => track.stop());
         setGrabando(false);
     };
 
@@ -68,10 +100,13 @@ export default function Home() {
                     }`}
                 onClick={grabando ? detenerGrabacion : iniciarGrabacion}
             >
-                {grabando ? "Detener" : "Grabar"}
+                {grabando ? "Detener" : "Reiniciar"}
             </button>
 
-            <div className="w-full max-w-md bg-white p-4 rounded-xl shadow">
+            <div className="w-full max-w-md bg-white p-4 rounded-xl shadow text-center">
+                <p className="text-sm text-gray-500 mb-2">
+                    Estado: <span className="font-semibold">{estado}</span>
+                </p>
                 <p className="text-gray-700">
                     <strong>Tú:</strong> {transcripcion}
                 </p>
@@ -82,3 +117,5 @@ export default function Home() {
         </main>
     );
 }
+
+
