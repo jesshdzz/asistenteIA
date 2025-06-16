@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export default function Home() {
     return (
-        <section className="px-4 py-24 mx-auto sm:px-6 lg:px-8 lg:py-32">
+        <section className="px-4 py-16 mx-auto sm:px-6 lg:px-8">
             <div className="text-center">
                 {/* Badge */}
                 <div className="px-4 py-2 mb-6 badge badge-soft badge-neutral">
@@ -11,7 +11,7 @@ export default function Home() {
                     Potenciado por IA
                 </div>
 
-                {/* Main heading */}
+                {/* Titulo */}
                 <h1 className="max-w-4xl mx-auto text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
                     Tu{" "}
                     <span className="text-transparent bg-gradient-to-r from-blue-900 via-blue-600 to-purple-600 bg-clip-text">
@@ -20,13 +20,13 @@ export default function Home() {
                     Inteligente
                 </h1>
 
-                {/* Subheading */}
+                {/* Subtitulo */}
                 <p className="max-w-2xl mx-auto mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
                     Automatiza tareas, obtén respuestas instantáneas y aumenta tu productividad con nuestro asistente virtual
                     impulsado por inteligencia artificial.
                 </p>
 
-                {/* CTA Buttons */}
+                {/* Boton */}
                 <div className="flex flex-col items-center justify-center gap-4 mt-10 sm:flex-row">
                     <Link href={"/signup"} className="inline-flex items-center justify-center px-8 py-3 text-lg text-white rounded-md group bg-primary-content/65 hover:bg-primary-content/40">
                         Comenzar Gratis
@@ -34,7 +34,7 @@ export default function Home() {
                     </Link>
                 </div>
 
-                {/* Features */}
+                {/* Caracteristicas */}
                 <div className="grid grid-cols-1 gap-8 mt-16 sm:grid-cols-3">
                     <div className="flex flex-col items-center">
                         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10">

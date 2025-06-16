@@ -16,10 +16,10 @@ export const Header = () => {
             </div>
 
             <div className="navbar-end">
-                <div className="flex items-center gap-2">
+                <   div className="flex items-center gap-2">
                     <button className="btn btn-ghost btn-circle">
                         <div className="indicator">
-                            <Bell className="w-5 h-5" />
+                                <Bell className="w-5 h-5" />
                         </div>
                     </button>
 
