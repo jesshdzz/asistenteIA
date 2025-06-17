@@ -1,5 +1,4 @@
-// app/page.tsx
-"use client";
+"use client"
 
 import {
     Mic,
@@ -11,122 +10,145 @@ import {
     BotMessageSquare,
     CirclePause,
     CircleUser,
-} from "lucide-react";
-import { useState, useRef, useCallback } from "react";
-import { detectarYEjecutarAccion } from "@/lib/comandos";
-import { SideMenu } from "@/components/SideMenu";
+} from "lucide-react"
+import { useState, useRef, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { detectarYEjecutarAccion } from "@/lib/comandos"
+import { SideMenu } from "@/components/SideMenu"
+import { usuarioStorage } from "@/lib/storage"
 
-type Estado = "esperando" | "escuchando" | "procesando" | "hablando";
+type Estado = "esperando" | "escuchando" | "procesando" | "hablando"
 
-export default function Home() {
-    const [transcripcion, setTranscripcion] = useState("");
-    const [respuesta, setRespuesta] = useState("");
-    const [estado, setEstado] = useState<Estado>("esperando");
-    const [grabando, setGrabando] = useState(false);
+export default function AsistentePage() {
+    const [transcripcion, setTranscripcion] = useState("")
+    const [respuesta, setRespuesta] = useState("")
+    const [estado, setEstado] = useState<Estado>("esperando")
+    const [grabando, setGrabando] = useState(false)
     const [silenciado, setSilenciado] = useState(false)
+    const [usuario, setUsuario] = useState<any>(null)
 
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioChunksRef = useRef<Blob[]>([]);
-    const detenerRef = useRef(false);
-    const streamRef = useRef<MediaStream | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const router = useRouter()
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+    const audioChunksRef = useRef<Blob[]>([])
+    const detenerRef = useRef(false)
+    const streamRef = useRef<MediaStream | null>(null)
+    const audioRef = useRef<HTMLAudioElement | null>(null)
+
+    // Verificar autenticación
+    useEffect(() => {
+        const usuarioActual = usuarioStorage.obtenerActual()
+        if (!usuarioActual) {
+            router.push("/login")
+            return
+        }
+        setUsuario(usuarioActual)
+    }, [router])
 
     const iniciarGrabacion = useCallback(async () => {
-        setEstado("escuchando");
-        detenerRef.current = false;
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
+        setEstado("escuchando")
+        detenerRef.current = false
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        streamRef.current = stream
 
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
+        const mediaRecorder = new MediaRecorder(stream)
+        mediaRecorderRef.current = mediaRecorder
+        audioChunksRef.current = []
 
         mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) audioChunksRef.current.push(event.data);
-        };
+            if (event.data.size > 0) audioChunksRef.current.push(event.data)
+        }
 
         mediaRecorder.onstop = async () => {
-            if (detenerRef.current) return;
-            setEstado("procesando");
-            const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-            const formData = new FormData();
-            formData.append("audio", blob);
+            if (detenerRef.current) return
+            setEstado("procesando")
+            const blob = new Blob(audioChunksRef.current, { type: "audio/webm" })
+            const formData = new FormData()
+            formData.append("audio", blob)
 
             try {
-                const res = await fetch("/api/deepgram/stt", { method: "POST", body: formData });
-                const data = await res.json();
-                setTranscripcion(data.transcripcion);
+                const res = await fetch("/api/deepgram/stt", { method: "POST", body: formData })
+                const data = await res.json()
+                setTranscripcion(data.transcripcion)
 
                 const chatRes = await fetch("/api/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ mensaje: data.transcripcion }),
-                });
-                const chatData = await chatRes.json();
+                })
+                const chatData = await chatRes.json()
 
-                const texto = await detectarYEjecutarAccion(chatData.accion || chatData.respuesta || chatData.error || "No entendí tu solicitud");
-                setRespuesta(texto);
+                const texto = await detectarYEjecutarAccion(chatData)
 
-                setEstado("hablando");
-                console.log("=> ", silenciado);
-                
-                const utter = await fetch("/api/murf", {
-                    method: "POST",
-                    body: JSON.stringify({ text: texto }),
-                });
-                const audioData = await utter.json();
+                setRespuesta(texto)
+
+                setEstado("hablando")
+                console.log("=> ", silenciado)
 
                 if (!silenciado) {
+                    const utter = await fetch("/api/murf", {
+                        method: "POST",
+                        body: JSON.stringify({ text: texto }),
+                    })
+                    const audioData = await utter.json()
 
-                    const audio = new Audio(audioData.audio);
-                    audioRef.current = audio;
-                    audio.play();
+                    const audio = new Audio(audioData.audio)
+                    audioRef.current = audio
+                    audio.play()
                     audio.onended = () => {
-                        if (!detenerRef.current) iniciarGrabacion();
-                        else setEstado("esperando");
-                    };
-                }else {
+                        if (chatData.fin) detenerGrabacion()
+                        else if (!detenerRef.current) iniciarGrabacion()
+                        else setEstado("esperando")
+                    }
+                } else {
                     // Si está silenciado, reiniciar grabación sin reproducir audio
                     setTimeout(() => {
-                        if (!detenerRef.current) iniciarGrabacion();
-                        else setEstado("esperando");
-                    }, 3000);
+                        if (!detenerRef.current) iniciarGrabacion()
+                        else setEstado("esperando")
+                    }, 3000)
                 }
             } catch (e) {
-                setRespuesta("Error: " + e);
-                setEstado("esperando");
+                setRespuesta("Error: " + e)
+                setEstado("esperando")
             }
-        };
+        }
 
-        mediaRecorder.start();
-        setGrabando(true);
+        mediaRecorder.start()
+        setGrabando(true)
 
-        // 7s máx por ciclo
         setTimeout(() => {
             if (mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop();
-                setGrabando(false);
+                mediaRecorder.stop()
+                setGrabando(false)
             }
-        }, 7000);
-    }, [silenciado]);
+        }, 12000)
+    }, [silenciado])
 
     const detenerGrabacion = () => {
-        detenerRef.current = true;
-        mediaRecorderRef.current?.stop();
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        audioRef.current?.pause();
-        audioRef.current = null;
-        setGrabando(false);
-        setEstado("esperando");
-    };
+        detenerRef.current = true
+        mediaRecorderRef.current?.stop()
+        streamRef.current?.getTracks().forEach((t) => t.stop())
+        audioRef.current?.pause()
+        audioRef.current = null
+        setGrabando(false)
+        setEstado("esperando")
+    }
 
     const reiniciarGrabacion = () => {
-        detenerGrabacion();
-        setTranscripcion("");
-        setRespuesta("");
-        setSilenciado(false);
-        setEstado("esperando");
-    };
+        detenerGrabacion()
+        setTranscripcion("")
+        setRespuesta("")
+        setSilenciado(false)
+        setEstado("esperando")
+    }
+
+    // Mostrar loading si no hay usuario
+    if (!usuario) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="loading loading-spinner loading-lg"></div>
+            </div>
+        )
+    }
 
     return (
         <div className="grid grid-cols-[300px_1fr] min-h-full">
@@ -138,7 +160,7 @@ export default function Home() {
                         <BotMessageSquare className="w-10 h-10" />
                     </div>
                     <div>
-                        <h1 className="mb-2 text-3xl font-bold text-primary-content/60">Asistente Virtual</h1>
+                        <h1 className="mb-2 text-3xl font-bold text-primary-content/60">Hola, {usuario.nombre}</h1>
                         <p className="text-base-content/70">Presiona el micrófono y comienza a hablar</p>
                     </div>
                 </div>
@@ -158,12 +180,12 @@ export default function Home() {
 
                     <button
                         className={`btn btn-circle w-32 h-32 text-2xl relative overflow-hidden transition-all duration-300 ${estado === "escuchando"
-                            ? "btn-error scale-110"
-                            : estado === "procesando"
-                                ? "btn-warning"
-                                : estado === "hablando"
-                                    ? "btn-info"
-                                    : "btn-primary hover:scale-105"
+                                ? "btn-error scale-110"
+                                : estado === "procesando"
+                                    ? "btn-warning"
+                                    : estado === "hablando"
+                                        ? "btn-info"
+                                        : "btn-primary hover:scale-105"
                             }`}
                         onClick={grabando ? detenerGrabacion : iniciarGrabacion}
                     >
@@ -262,10 +284,7 @@ export default function Home() {
                         <RotateCcw className="w-4 h-4" />
                         Nueva Conversación
                     </button>
-                    <button
-                        className="btn btn-outline btn-sm"
-                        onClick={() => setSilenciado(!silenciado)}
-                    >
+                    <button className="btn btn-outline btn-sm" onClick={() => setSilenciado(!silenciado)}>
                         {silenciado ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                         {silenciado ? "Silenciado" : "Silenciar"}
                     </button>
@@ -276,5 +295,5 @@ export default function Home() {
                 </div>
             </div>
         </div>
-    );
+    )
 }

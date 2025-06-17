@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import Link from "next/link"
 
 const menuItems = [
-    { icon: Home, label: "Inicio", href: "/", badge: null },
+    // { icon: Home, label: "Inicio", href: "/", badge: null },
     { icon: BotMessageSquare, label: "Asistente", href: "/asistente", badge: null },
     { icon: Notebook, label: "Notas", href: "/notas", badge: null },
     { icon: ListTodo, label: "Pendientes", href: "/pendientes", badge: null },

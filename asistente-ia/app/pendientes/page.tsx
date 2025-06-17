@@ -185,6 +185,25 @@ export default function PendientesPage() {
     return fecha.toDateString() === new Date().toDateString()
   }
 
+  const colorPendiente = (categoria: string) => {
+    switch (categoria) {
+      case "Personal":
+        return "bg-blue-100 border-blue-300"
+      case "Trabajo":
+        return "bg-green-100 border-green-300"
+      case "Salud":
+        return "bg-yellow-100 border-yellow-300"
+      case "Familia":
+        return "bg-pink-100 border-pink-300"
+      case "Estudios":
+        return "bg-purple-100 border-purple-300"
+      case "Hogar":
+        return "bg-gray-100 border-gray-300"
+      default:
+        return "bg-base-100 border-base-200"
+    }
+  }
+
   if (cargando) {
     return (
       <div className="grid grid-cols-[300px_1fr] min-h-screen">
@@ -222,9 +241,10 @@ export default function PendientesPage() {
           {pendientes.map((pendiente) => (
             <div
               key={pendiente.id}
-              className={`card bg-base-100 shadow-sm border hover:shadow-md transition-all duration-200 ${
-                pendiente.estado === "completado" ? "opacity-60" : ""
-              } ${estaVencido(pendiente.fechaVencimiento) ? "border-error" : ""}`}
+              className={`card bg-base-100 shadow-sm border hover:shadow-md transition-all duration-200 
+                ${pendiente.estado === "completado" ? "opacity-60" : ""} 
+                ${estaVencido(pendiente.fechaVencimiento) ? "border-error" : ""}
+                ${colorPendiente(pendiente.categoria)}}`}
             >
               <div className="p-4 card-body">
                 <div className="flex items-start gap-4">
@@ -259,13 +279,12 @@ export default function PendientesPage() {
                       <div className="badge badge-outline">{pendiente.categoria}</div>
                       {pendiente.fechaVencimiento && (
                         <div
-                          className={`flex items-center gap-1 ${
-                            estaVencido(pendiente.fechaVencimiento)
-                              ? "text-error"
-                              : esHoy(pendiente.fechaVencimiento)
-                                ? "text-warning"
-                                : "text-base-content/60"
-                          }`}
+                          className={`flex items-center gap-1 ${estaVencido(pendiente.fechaVencimiento)
+                            ? "text-error-content/70"
+                            : esHoy(pendiente.fechaVencimiento)
+                              ? "text-warning-content/60"
+                              : "text-base-content/60"
+                            }`}
                         >
                           <Calendar className="w-3 h-3" />
                           <span>{pendiente.fechaVencimiento.toLocaleDateString()}</span>
@@ -327,8 +346,8 @@ export default function PendientesPage() {
               </button>
             </div>
 
-            <div className="grid items-center gap-2 md:grid-flow-col grid-cols-2 md:grid-rows-3 gap-x-8">
-              <div className="grid col-span-3 grid-cols-2 gap-4">
+            <div className="grid items-center grid-cols-2 gap-2 md:grid-flow-col md:grid-rows-3 gap-x-8">
+              <div className="grid grid-cols-2 col-span-3 gap-4">
                 <fieldset className="w-full fieldset">
                   <legend className="fieldset-legend">Titulo: </legend>
                   <input
