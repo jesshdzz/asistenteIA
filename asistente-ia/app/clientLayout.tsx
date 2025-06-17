@@ -6,15 +6,15 @@ import { usePathname } from 'next/navigation';
 
 export default function CLientLayout({ children, }: Readonly<{ children: React.ReactNode; }>) {
     const pathname = usePathname();
-    const ocultarLayout = ["/login", "/signup"].includes(pathname);
-
+    const ocultarHeader = ["/login", "/signup"].includes(pathname);
+    const ocultarFooter = ["/login", "/signup", "/asistente"].includes(pathname);
     return (
         <>
-            {!ocultarLayout && <Header />}
+            {!ocultarHeader && <Header />}
             <main>
                 {children}
             </main>
-            {!ocultarLayout && <Footer />}
+            {!ocultarFooter && <Footer />}
         </>
     );
 }
