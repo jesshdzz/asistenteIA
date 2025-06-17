@@ -1,10 +1,19 @@
 // app/page.tsx
 "use client";
 
-import { Mic, MicOff, Volume2, VolumeX, RotateCcw, Settings, BotMessageSquare, CirclePause, CircleUser } from "lucide-react"
-import { useState, useRef, useCallback, useEffect } from "react";
+import {
+    Mic,
+    MicOff,
+    Volume2,
+    VolumeX,
+    RotateCcw,
+    Settings,
+    BotMessageSquare,
+    CirclePause,
+    CircleUser,
+} from "lucide-react";
+import { useState, useRef, useCallback } from "react";
 import { detectarYEjecutarAccion } from "@/lib/comandos";
-
 import { Sidemenu } from "@/components/Sidemenu";
 
 type Estado = "esperando" | "escuchando" | "procesando" | "hablando";
@@ -12,31 +21,22 @@ type Estado = "esperando" | "escuchando" | "procesando" | "hablando";
 export default function Home() {
     const [transcripcion, setTranscripcion] = useState("");
     const [respuesta, setRespuesta] = useState("");
-    const [grabando, setGrabando] = useState(false);
     const [estado, setEstado] = useState<Estado>("esperando");
+    const [grabando, setGrabando] = useState(false);
+    const [silenciado, setSilenciado] = useState(false)
+
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const detenerRef = useRef(false);
     const streamRef = useRef<MediaStream | null>(null);
-    const [audioLevel, setAudioLevel] = useState(0);
-
-    useEffect(() => {
-        let interval: NodeJS.Timeout
-        if (estado === "escuchando") {
-            interval = setInterval(() => {
-                setAudioLevel(Math.random() * 100)
-            }, 100)
-        } else {
-            setAudioLevel(0)
-        }
-        return () => clearInterval(interval)
-    }, [estado])
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const iniciarGrabacion = useCallback(async () => {
         setEstado("escuchando");
         detenerRef.current = false;
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
+
         const mediaRecorder = new MediaRecorder(stream);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
@@ -53,13 +53,8 @@ export default function Home() {
             formData.append("audio", blob);
 
             try {
-                const res = await fetch("/api/deepgram/stt", {
-                    method: "POST",
-                    body: formData,
-                });
+                const res = await fetch("/api/deepgram/stt", { method: "POST", body: formData });
                 const data = await res.json();
-                console.log("Transcripción:", data.transcripcion);
-
                 setTranscripcion(data.transcripcion);
 
                 const chatRes = await fetch("/api/chat", {
@@ -68,29 +63,36 @@ export default function Home() {
                     body: JSON.stringify({ mensaje: data.transcripcion }),
                 });
                 const chatData = await chatRes.json();
-                // Detectar y ejecutar acción (si hay)
-                const textoParaHablar = detectarYEjecutarAccion(chatData.accion || chatData.respuesta);
-                setRespuesta(textoParaHablar);
 
-                // Hablar la respuesta
+                const texto = detectarYEjecutarAccion(chatData.accion || chatData.respuesta);
+                setRespuesta(texto);
+
                 setEstado("hablando");
-                const utter = await fetch('/api/murf', {
-                    method: "POST",
-                    body: JSON.stringify({ text: textoParaHablar }),
-                });
-                const audioData = await utter.json();
-                const audio = new Audio(audioData.audio);
-                audio.play();
+                console.log("=> ", silenciado);
+                
+                if (!silenciado) {
+                    const utter = await fetch("/api/murf", {
+                        method: "POST",
+                        body: JSON.stringify({ text: texto }),
+                    });
+                    const audioData = await utter.json();
 
-                audio.onended = () => {
-                    if (!detenerRef.current) {
-                        iniciarGrabacion();
-                    } else {
-                        setEstado("esperando");
-                    }
-                };
-            } catch (error) {
-                setRespuesta("Ocurrió un error procesando el audio:" + error);
+                    const audio = new Audio(audioData.audio);
+                    audioRef.current = audio;
+                    audio.play();
+                    audio.onended = () => {
+                        if (!detenerRef.current) iniciarGrabacion();
+                        else setEstado("esperando");
+                    };
+                }else {
+                    // Si está silenciado, reiniciar grabación sin reproducir audio
+                    setTimeout(() => {
+                        if (!detenerRef.current) iniciarGrabacion();
+                        else setEstado("esperando");
+                    }, 3000);
+                }
+            } catch (e) {
+                setRespuesta("Error: " + e);
                 setEstado("esperando");
             }
         };
@@ -98,19 +100,31 @@ export default function Home() {
         mediaRecorder.start();
         setGrabando(true);
 
+        // 7s máx por ciclo
         setTimeout(() => {
             if (mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
                 setGrabando(false);
             }
-        }, 4000); // 4 segundos de grabación por ciclo
-    }, []); // <-- Cierra el useCallback
+        }, 7000);
+    }, [silenciado]);
 
     const detenerGrabacion = () => {
         detenerRef.current = true;
         mediaRecorderRef.current?.stop();
-        streamRef.current?.getTracks().forEach((track) => track.stop());
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        audioRef.current?.pause();
+        audioRef.current = null;
         setGrabando(false);
+        setEstado("esperando");
+    };
+
+    const reiniciarGrabacion = () => {
+        detenerGrabacion();
+        setTranscripcion("");
+        setRespuesta("");
+        setSilenciado(false);
+        setEstado("esperando");
     };
 
     return (
@@ -128,24 +142,19 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Simulacion de voz */}
-                {estado == "escuchando" && (
-                    <div className="flex items-center justify-center gap-1 mb-8">
-                        {[...Array(20)].map((_, i) => (
-                            <div
-                                key={i}
-                                className="w-1 transition-all duration-150 rounded-full bg-primary"
-                                style={{
-                                    height: `${Math.max(4, (audioLevel + Math.random() * 20) * 0.8)}px`,
-                                    opacity: 0.3 + (audioLevel / 100) * 0.7,
-                                }}
-                            />
-                        ))}
-                    </div>
-                )}
-
-                {/* Boton de voz */}
+                {/* Botón principal */}
                 <div className="relative mb-12">
+                    {estado === "escuchando" && (
+                        <>
+                            <div className="absolute inset-0 border-4 rounded-full opacity-75 border-error animate-ping"></div>
+                            <div className="absolute inset-0 border-4 rounded-full opacity-50 border-error animate-ping animation-delay-75"></div>
+                        </>
+                    )}
+
+                    {estado === "hablando" && (
+                        <div className="absolute inset-0 border-4 rounded-full border-info opacity-60 animate-pulse"></div>
+                    )}
+
                     <button
                         className={`btn btn-circle w-32 h-32 text-2xl relative overflow-hidden transition-all duration-300 ${estado === "escuchando"
                             ? "btn-error scale-110"
@@ -167,20 +176,9 @@ export default function Home() {
                             <Mic className="w-12 h-12" />
                         )}
                     </button>
-
-                    {estado === "escuchando" && (
-                        <>
-                            <div className="absolute inset-0 border-4 rounded-full opacity-75 border-error animate-ping"></div>
-                            <div className="absolute inset-0 border-4 rounded-full opacity-50 border-error animate-ping animation-delay-75"></div>
-                        </>
-                    )}
-
-                    {estado === "hablando" && (
-                        <div className="absolute inset-0 border-4 rounded-full border-info opacity-60 animate-pulse"></div>
-                    )}
                 </div>
 
-                {/* Status */}
+                {/* Estado */}
                 <div className="mb-8 text-center">
                     {estado === "escuchando" && (
                         <div className="alert alert-info">
@@ -200,7 +198,7 @@ export default function Home() {
                             <span>Reproduciendo respuesta...</span>
                         </div>
                     )}
-                    {!(estado === "escuchando") && !(estado === "procesando") && !(estado === "hablando") && (
+                    {estado === "esperando" && (
                         <div className="alert">
                             <Mic className="w-5 h-5" />
                             <span>Listo para escuchar</span>
@@ -208,63 +206,72 @@ export default function Home() {
                     )}
                 </div>
 
-                {/* Transcripcion */}
+                {/* Mensaje usuario */}
                 {transcripcion && (
                     <div className="w-full max-w-2xl mb-6 shadow-lg card bg-base-200">
                         <div className="card-body">
-                            <div className="flex items-start gap-3">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary">
+                            <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                                     <CircleUser className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="mb-1 text-sm font-semibold text-base-content/70">Tu mensaje:</h3>
-                                    <p className="text-base-content">{transcripcion}</p>
+                                    <h3 className="text-sm font-semibold text-base-content/70">Tu mensaje:</h3>
+                                    <p>{transcripcion}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Respuesta */}
+                {/* Respuesta IA */}
                 {respuesta && (
                     <div className="w-full max-w-2xl mb-6 shadow-lg card bg-primary/10">
                         <div className="card-body">
-                            <div className="flex items-start gap-3">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary">
+                            <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                                     <BotMessageSquare className="w-5 h-5" />
-
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                         <h3 className="text-sm font-semibold text-base-content/70">Respuesta:</h3>
                                         {estado === "hablando" && <Volume2 className="w-4 h-4 text-primary animate-pulse" />}
                                     </div>
-                                    <p className="text-base-content">{respuesta}</p>
+                                    <p>{respuesta}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Botones de accion */}
+                {/* Botones */}
                 <div className="flex gap-4">
-                    <button className={`btn btn-outline btn-sm ${grabando ? 'text-error' : ''}`} onClick={detenerGrabacion} disabled={estado === "esperando"}>
+                    <button
+                        className={`btn btn-outline btn-sm ${grabando ? "text-error" : ""}`}
+                        onClick={detenerGrabacion}
+                        disabled={estado === "esperando"}
+                    >
                         <CirclePause className="w-4 h-4" />
                         Detener conversación
                     </button>
-                    <button className="btn btn-outline btn-sm" onClick={iniciarGrabacion} disabled={estado === "escuchando" || estado === "procesando"}>
+                    <button
+                        className="btn btn-outline btn-sm"
+                        onClick={reiniciarGrabacion}
+                        disabled={estado === "escuchando" || estado === "procesando"}
+                    >
                         <RotateCcw className="w-4 h-4" />
                         Nueva Conversación
                     </button>
-                    <button className="btn btn-outline btn-sm">
-                        <VolumeX className="w-4 h-4" />
-                        Silenciar
+                    <button
+                        className="btn btn-outline btn-sm"
+                        onClick={() => setSilenciado(!silenciado)}
+                    >
+                        {silenciado ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                        {silenciado ? "Silenciado" : "Silenciar"}
                     </button>
                     <button className="btn btn-outline btn-sm">
                         <Settings className="w-4 h-4" />
-                        Configuración
+                        Config
                     </button>
-
                 </div>
             </div>
         </div>
