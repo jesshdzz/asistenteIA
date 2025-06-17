@@ -3,7 +3,7 @@
 
 import { detectarYEjecutarAccion } from "@/lib/comandos";
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, MicOff, Volume2, VolumeX, RotateCcw, Settings } from "lucide-react"
+import { Mic, MicOff, Volume2, VolumeX, RotateCcw, Settings, BotMessageSquare, CirclePause, CircleUser } from "lucide-react"
 
 type Estado = "esperando" | "escuchando" | "procesando" | "hablando";
 
@@ -114,23 +114,23 @@ export default function Home() {
     return (
         <div className="flex flex-col items-center justify-center min-h-[80vh] p-8 max-w-4xl mx-auto">
             {/* Header */}
-            <div className="text-center mb-12">
-                <div className="avatar mb-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                        <span className="text-2xl font-bold text-primary-content">AI</span>
-                    </div>
+            <div className="mb-12 text-center flex flex-col items-center gap-5">
+                <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary">
+                    <BotMessageSquare className="w-10 h-10" />
                 </div>
-                <h1 className="text-3xl font-bold text-primary mb-2">Asistente Virtual</h1>
-                <p className="text-base-content/70">Presiona el micrófono y comienza a hablar</p>
+                <div>
+                    <h1 className="mb-2 text-3xl font-bold text-primary-content/60">Asistente Virtual</h1>
+                    <p className="text-base-content/70">Presiona el micrófono y comienza a hablar</p>
+                </div>
             </div>
 
-            {/* Audio Visualization */}
+            {/* Simulacion de voz */}
             {estado == "escuchando" && (
                 <div className="flex items-center justify-center gap-1 mb-8">
                     {[...Array(20)].map((_, i) => (
                         <div
                             key={i}
-                            className="w-1 bg-primary rounded-full transition-all duration-150"
+                            className="w-1 transition-all duration-150 rounded-full bg-primary"
                             style={{
                                 height: `${Math.max(4, (audioLevel + Math.random() * 20) * 0.8)}px`,
                                 opacity: 0.3 + (audioLevel / 100) * 0.7,
@@ -140,8 +140,7 @@ export default function Home() {
                 </div>
             )}
 
-
-            {/* Main Voice Button */}
+            {/* Boton de voz */}
             <div className="relative mb-12">
                 <button
                     className={`btn btn-circle w-32 h-32 text-2xl relative overflow-hidden transition-all duration-300 ${estado === "escuchando"
@@ -165,22 +164,20 @@ export default function Home() {
                     )}
                 </button>
 
-                {/* Pulse rings for listening state */}
                 {estado === "escuchando" && (
                     <>
-                        <div className="absolute inset-0 rounded-full border-4 border-error opacity-75 animate-ping"></div>
-                        <div className="absolute inset-0 rounded-full border-4 border-error opacity-50 animate-ping animation-delay-75"></div>
+                        <div className="absolute inset-0 border-4 rounded-full opacity-75 border-error animate-ping"></div>
+                        <div className="absolute inset-0 border-4 rounded-full opacity-50 border-error animate-ping animation-delay-75"></div>
                     </>
                 )}
 
-                {/* Speaking indicator */}
                 {estado === "hablando" && (
-                    <div className="absolute inset-0 rounded-full border-4 border-info opacity-60 animate-pulse"></div>
+                    <div className="absolute inset-0 border-4 rounded-full border-info opacity-60 animate-pulse"></div>
                 )}
             </div>
 
-            {/* Status Text */}
-            <div className="text-center mb-8">
+            {/* Status */}
+            <div className="mb-8 text-center">
                 {estado === "escuchando" && (
                     <div className="alert alert-info">
                         <Volume2 className="w-5 h-5" />
@@ -207,18 +204,16 @@ export default function Home() {
                 )}
             </div>
 
-            {/* Transcription */}
+            {/* Transcripcion */}
             {transcripcion && (
-                <div className="card w-full max-w-2xl bg-base-200 shadow-lg mb-6">
+                <div className="w-full max-w-2xl mb-6 shadow-lg card bg-base-200">
                     <div className="card-body">
                         <div className="flex items-start gap-3">
-                            <div className="avatar">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                    <span className="text-xs font-bold text-primary-content">TÚ</span>
-                                </div>
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary">
+                                <CircleUser className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="font-semibold text-sm text-base-content/70 mb-1">Tu mensaje:</h3>
+                                <h3 className="mb-1 text-sm font-semibold text-base-content/70">Tu mensaje:</h3>
                                 <p className="text-base-content">{transcripcion}</p>
                             </div>
                         </div>
@@ -226,19 +221,18 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Response */}
+            {/* Respuesta */}
             {respuesta && (
-                <div className="card w-full max-w-2xl bg-primary/10 shadow-lg mb-6">
+                <div className="w-full max-w-2xl mb-6 shadow-lg card bg-primary/10">
                     <div className="card-body">
                         <div className="flex items-start gap-3">
-                            <div className="avatar">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                    <span className="text-xs font-bold text-primary-content">AI</span>
-                                </div>
+                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary">
+                                <BotMessageSquare className="w-5 h-5" />
+
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-semibold text-sm text-base-content/70">Respuesta:</h3>
+                                    <h3 className="text-sm font-semibold text-base-content/70">Respuesta:</h3>
                                     {estado === "hablando" && <Volume2 className="w-4 h-4 text-primary animate-pulse" />}
                                 </div>
                                 <p className="text-base-content">{respuesta}</p>
@@ -248,45 +242,26 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Botones de accion */}
             <div className="flex gap-4">
+                <button className={`btn btn-outline btn-sm ${grabando ? 'text-error' : ''}`} onClick={detenerGrabacion} disabled={estado === "esperando"}>
+                    <CirclePause className="w-4 h-4" />
+                    Detener conversación
+                </button>
                 <button className="btn btn-outline btn-sm" onClick={iniciarGrabacion} disabled={estado === "escuchando" || estado === "procesando"}>
                     <RotateCcw className="w-4 h-4" />
                     Nueva Conversación
                 </button>
                 <button className="btn btn-outline btn-sm">
-                    <Settings className="w-4 h-4" />
-                    Configuración
-                </button>
-                <button className="btn btn-outline btn-sm">
                     <VolumeX className="w-4 h-4" />
                     Silenciar
                 </button>
+                <button className="btn btn-outline btn-sm">
+                    <Settings className="w-4 h-4" />
+                    Configuración
+                </button>
+
             </div>
         </div>
     );
 }
-
-
-
-// <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-100">
-//     <button
-//         className={`mb-4 px-4 py-2 rounded-lg text-white font-bold shadow-lg transition-all duration-200 ${grabando ? "bg-red-500" : "bg-green-500"
-//             }`}
-//         onClick={grabando ? detenerGrabacion : iniciarGrabacion}
-//     >
-//         {grabando ? "Detener" : "Reiniciar"}
-//     </button>
-
-//     <div className="w-full max-w-md p-4 text-center bg-white shadow rounded-xl">
-//         <p className="mb-2 text-sm text-gray-500">
-//             Estado: <span className="font-semibold">{estado}</span>
-//         </p>
-//         <p className="text-gray-700">
-//             <strong>Tú:</strong> {transcripcion}
-//         </p>
-//         <p className="mt-2 text-gray-900">
-//             <strong>Asistente:</strong> {respuesta}
-//         </p>
-//     </div>
-// </div>
