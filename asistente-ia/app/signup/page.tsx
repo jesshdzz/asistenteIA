@@ -1,15 +1,17 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Mail, Lock, User, UserPlus } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { usuarioStorage, inicializarDatosEjemplo } from "@/lib/storage"
 
 export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState("")
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -18,15 +20,79 @@ export default function SignupPage() {
         acceptTerms: false,
     })
 
+    const router = useRouter()
+
+    useEffect(() => {
+        inicializarDatosEjemplo()
+        // Si ya hay un usuario logueado, redirigir
+        const usuarioActual = usuarioStorage.obtenerActual()
+        if (usuarioActual) {
+            router.push("/asistente")
+        }
+    }, [router])
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
+        setError("")
 
-        // Simular llamada a API
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        try {
+            // Validaciones
+            if (!formData.name.trim()) {
+                setError("El nombre es requerido")
+                return
+            }
 
-        console.log("Signup attempt:", formData)
-        setIsLoading(false)
+            if (!formData.email.trim()) {
+                setError("El email es requerido")
+                return
+            }
+
+            if (formData.password.length < 6) {
+                setError("La contraseña debe tener al menos 6 caracteres")
+                return
+            }
+
+            if (formData.password !== formData.confirmPassword) {
+                setError("Las contraseñas no coinciden")
+                return
+            }
+
+            if (!formData.acceptTerms) {
+                setError("Debes aceptar los términos y condiciones")
+                return
+            }
+
+            // Simular delay de red
+            await new Promise((resolve) => setTimeout(resolve, 1000))
+
+            // Verificar si el email ya existe
+            const usuarios = usuarioStorage.obtenerTodos()
+            const emailExiste = usuarios.some((u) => u.email.toLowerCase() === formData.email.toLowerCase())
+
+            if (emailExiste) {
+                setError("Ya existe una cuenta con este correo electrónico")
+                return
+            }
+
+            // Crear nuevo usuario
+            const nuevoUsuario = usuarioStorage.crear({
+                nombre: formData.name.trim(),
+                email: formData.email.toLowerCase().trim(),
+                contraseña: formData.password, 
+            })
+
+            // Establecer como usuario actual
+            usuarioStorage.establecerActual(nuevoUsuario)
+
+            // Redirigir al asistente
+            router.push("/asistente")
+        } catch (error) {
+            console.error("Error en registro:", error)
+            setError("Ocurrió un error inesperado")
+        } finally {
+            setIsLoading(false)
+        }
     }
 
     const handleInputChange = (field: string, value: string | boolean) => {
@@ -34,6 +100,8 @@ export default function SignupPage() {
             ...prev,
             [field]: value,
         }))
+        // Limpiar error al escribir
+        if (error) setError("")
     }
 
     return (
@@ -46,11 +114,17 @@ export default function SignupPage() {
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold tracking-wide">Crear cuenta</div>
-                            <div className="text-sm ">Completa el formulario para comenzar</div>
+                            <div className="text-sm">Completa el formulario para comenzar</div>
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit}>
+                    {error && (
+                        <div className="w-full alert alert-error">
+                            <span className="text-sm">{error}</span>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="w-full">
                         <fieldset className="fieldset">
                             <legend className="fieldset-legend">Nombre completo</legend>
                             <div className="flex items-center gap-3">
@@ -97,11 +171,7 @@ export default function SignupPage() {
                                     className="rounded-md hover:bg-transparent hover:text-accent-content/80"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    {showPassword ? (
-                                        <EyeOff className="w-5 h-5" />
-                                    ) : (
-                                        <Eye className="w-5 h-5" />
-                                    )}
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                         </fieldset>
@@ -114,7 +184,7 @@ export default function SignupPage() {
                                     type={showConfirmPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     value={formData.confirmPassword}
-                                    onChange={(e) => handleInputChange("password", e.target.value)}
+                                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                                     required
                                 />
                                 <button
@@ -122,14 +192,11 @@ export default function SignupPage() {
                                     className="rounded-md hover:bg-transparent hover:text-accent-content/80"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 >
-                                    {showConfirmPassword ? (
-                                        <EyeOff className="w-5 h-5" />
-                                    ) : (
-                                        <Eye className="w-5 h-5" />
-                                    )}
+                                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
                         </fieldset>
+
                         <fieldset className="fieldset">
                             <label className="label">
                                 <input
@@ -160,14 +227,17 @@ export default function SignupPage() {
 
                             <div className="text-sm text-center text-muted-foreground">
                                 ¿Ya tienes cuenta?{" "}
-                                <Link href={"/login"} className="px-0 font-normal hover:underline text-primary-content/50 underline-offset-4">
+                                <Link
+                                    href={"/login"}
+                                    className="px-0 font-normal hover:underline text-primary-content/50 underline-offset-4"
+                                >
                                     Inicia sesión aquí
                                 </Link>
                             </div>
                         </div>
                     </form>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     )
 }

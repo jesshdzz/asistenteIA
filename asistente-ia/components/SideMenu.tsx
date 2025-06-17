@@ -31,7 +31,6 @@ export const SideMenu = () => {
                     <div className="flex-1">
                         <h3 className="font-semibold">{usuario?.nombre || "Usuario"}</h3>
                         <p className="text-sm text-base-content/60">{usuario?.email || "usuario@ejemplo.com"}</p>
-                        <p className="text-sm text-base-content/60">juan@ejemplo.com</p>
                     </div>
                     <div className="dropdown dropdown-end">
                         <div tabIndex={0} role="button" className="btn btn-ghost btn-sm btn-circle">
