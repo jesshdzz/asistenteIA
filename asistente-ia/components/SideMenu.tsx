@@ -1,7 +1,10 @@
-import { HelpCircle, History, Home, ListTodo, LogOut, Notebook, Settings, User } from "lucide-react"
+import { BotMessageSquare, HelpCircle, History, Home, ListTodo, LogOut, Notebook, Settings, User } from "lucide-react"
+import { usuarioStorage, type Usuario } from "@/lib/storage"
+import { useState, useEffect } from "react"
 
 const menuItems = [
     { icon: Home, label: "Inicio", href: "/", badge: null },
+    { icon: BotMessageSquare, label: "Asistente", href: "/asistente", badge: null },
     { icon: Notebook, label: "Notas", href: "/notas", badge: null },
     { icon: ListTodo, label: "Pendientes", href: "/pendientes", badge: null },
     { icon: History, label: "Historial", href: "/history", badge: "12" },
@@ -10,6 +13,13 @@ const menuItems = [
 ]
 
 export const SideMenu = () => {
+    const [usuario, setUsuario] = useState<Usuario | null>(null)
+
+    useEffect(() => {
+        const usuarioActual = usuarioStorage.obtenerActual()
+        setUsuario(usuarioActual)
+    }, [])
+
     return (
         <aside className="w-full h-full overflow-y-scroll shadow-xl ">
             {/* User Profile */}
@@ -19,7 +29,8 @@ export const SideMenu = () => {
                         <User className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-semibold">Juan Pérez</h3>
+                        <h3 className="font-semibold">{usuario?.nombre || "Usuario"}</h3>
+                        <p className="text-sm text-base-content/60">{usuario?.email || "usuario@ejemplo.com"}</p>
                         <p className="text-sm text-base-content/60">juan@ejemplo.com</p>
                     </div>
                     <div className="dropdown dropdown-end">

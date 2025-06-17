@@ -64,18 +64,19 @@ export default function Home() {
                 });
                 const chatData = await chatRes.json();
 
-                const texto = detectarYEjecutarAccion(chatData.accion || chatData.respuesta || chatData.error || "No entendí tu solicitud");
-                setRespuesta(await texto);
+                const texto = await detectarYEjecutarAccion(chatData.accion || chatData.respuesta || chatData.error || "No entendí tu solicitud");
+                setRespuesta(texto);
 
                 setEstado("hablando");
                 console.log("=> ", silenciado);
                 
+                const utter = await fetch("/api/murf", {
+                    method: "POST",
+                    body: JSON.stringify({ text: texto }),
+                });
+                const audioData = await utter.json();
+
                 if (!silenciado) {
-                    const utter = await fetch("/api/murf", {
-                        method: "POST",
-                        body: JSON.stringify({ text: texto }),
-                    });
-                    const audioData = await utter.json();
 
                     const audio = new Audio(audioData.audio);
                     audioRef.current = audio;
