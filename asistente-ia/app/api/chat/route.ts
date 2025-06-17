@@ -14,6 +14,12 @@ Las acciones disponibles son:
 - abrir_youtube
 - mostrar_clima
 - decir_hora
+- decir_fecha
+- crear_nota
+- crear_pendiente
+
+Si el usuario menciona una acción que no está en la lista, responde con un mensaje de error claro:
+{"error":"Acción no reconocida"}
 
 Ejemplos:
 Usuario: "Quiero ver unos videos"

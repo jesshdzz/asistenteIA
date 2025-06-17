@@ -1,15 +1,17 @@
-import { HelpCircle, History, Home, LogOut, Settings, User } from "lucide-react"
+import { HelpCircle, History, Home, ListTodo, LogOut, Notebook, Settings, User } from "lucide-react"
 
 const menuItems = [
     { icon: Home, label: "Inicio", href: "/", badge: null },
+    { icon: Notebook, label: "Notas", href: "/notas", badge: null },
+    { icon: ListTodo, label: "Pendientes", href: "/pendientes", badge: null },
     { icon: History, label: "Historial", href: "/history", badge: "12" },
     { icon: Settings, label: "Configuración", href: "/settings", badge: null },
     { icon: HelpCircle, label: "Ayuda", href: "/help", badge: null },
 ]
 
-export const Sidemenu = () => {
+export const SideMenu = () => {
     return (
-        <aside className=" shadow-xl w-full h-full overflow-y-scroll">
+        <aside className="w-full h-full overflow-y-scroll shadow-xl ">
             {/* User Profile */}
             <div className="p-6 border-b border-base-300">
                 <div className="flex items-center gap-3">

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { detectarYEjecutarAccion } from "@/lib/comandos";
-import { Sidemenu } from "@/components/Sidemenu";
+import { SideMenu } from "@/components/SideMenu";
 
 type Estado = "esperando" | "escuchando" | "procesando" | "hablando";
 
@@ -64,8 +64,8 @@ export default function Home() {
                 });
                 const chatData = await chatRes.json();
 
-                const texto = detectarYEjecutarAccion(chatData.accion || chatData.respuesta);
-                setRespuesta(texto);
+                const texto = detectarYEjecutarAccion(chatData.accion || chatData.respuesta || chatData.error || "No entendí tu solicitud");
+                setRespuesta(await texto);
 
                 setEstado("hablando");
                 console.log("=> ", silenciado);
@@ -129,7 +129,7 @@ export default function Home() {
 
     return (
         <div className="grid grid-cols-[300px_1fr] min-h-full">
-            <Sidemenu />
+            <SideMenu />
             <div className="flex flex-col min-h-full items-center p-16 mx-auto">
                 {/* Header */}
                 <div className="mb-12 text-center flex flex-col items-center gap-5">
