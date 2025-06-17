@@ -1,6 +1,8 @@
 import { BotMessageSquare, HelpCircle, History, Home, ListTodo, LogOut, Notebook, Settings, User } from "lucide-react"
 import { usuarioStorage, type Usuario } from "@/lib/storage"
 import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
 
 const menuItems = [
     { icon: Home, label: "Inicio", href: "/", badge: null },
@@ -14,11 +16,19 @@ const menuItems = [
 
 export const SideMenu = () => {
     const [usuario, setUsuario] = useState<Usuario | null>(null)
+    const pathname = usePathname()
 
     useEffect(() => {
         const usuarioActual = usuarioStorage.obtenerActual()
         setUsuario(usuarioActual)
     }, [])
+
+    const isActive = (href: string) => {
+        if (href === "/") {
+            return pathname === "/"
+        }
+        return pathname.startsWith(href)
+    }
 
     return (
         <aside className="w-full h-full overflow-y-scroll shadow-xl ">
@@ -70,23 +80,30 @@ export const SideMenu = () => {
             {/* Navigation Menu */}
             <nav className="p-4">
                 <ul className="w-full space-y-2 menu menu-vertical">
-                    {menuItems.map((item, index) => (
-                        <li key={index}>
-                            <a
-                                href={item.href}
-                                className="flex items-center justify-between p-3 transition-colors rounded-lg hover:bg-base-200"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <item.icon className="w-5 h-5" />
-                                    <span className="font-medium">{item.label}</span>
-                                </div>
-                                {item.badge && <div className="badge badge-primary badge-sm">{item.badge}</div>}
-                            </a>
-                        </li>
-                    ))}
+                    {menuItems.map((item, index) => {
+                        const active = isActive(item.href)
+                        return (
+                            <li key={index}>
+                                <Link
+                                    href={item.href}
+                                    className={`flex items-center justify-between p-3 transition-colors rounded-lg 
+                                        ${active
+                                            ? "bg-primary text-primary-content font-semibold shadow-md"
+                                            : "hover:bg-base-200"}`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <item.icon className={`w-5 h-5 ${active ? "text-primary-content" : ""}`} />
+                                        <span className={`font-medium ${active ? "text-primary-content" : ""}`}>{item.label}</span>
+                                    </div>
+                                    {item.badge && (
+                                        <div className={`badge badge-sm ${active ? "badge-secondary" : "badge-primary"}`}>{item.badge}</div>
+                                    )}
+                                </Link>
+                            </li>)
+                    })}
                 </ul>
             </nav>
-        </aside>
+        </aside >
     )
 
 }
