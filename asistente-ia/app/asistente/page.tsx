@@ -10,12 +10,14 @@ import {
     BotMessageSquare,
     CirclePause,
     CircleUser,
+    Menu,
+    X,
 } from "lucide-react"
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { detectarYEjecutarAccion } from "@/lib/comandos"
 import { SideMenu } from "@/components/SideMenu"
-import { usuarioStorage } from "@/lib/storage"
+import { Usuario, usuarioStorage } from "@/lib/storage"
 
 type Estado = "esperando" | "escuchando" | "procesando" | "hablando"
 
@@ -25,7 +27,8 @@ export default function AsistentePage() {
     const [estado, setEstado] = useState<Estado>("esperando")
     const [grabando, setGrabando] = useState(false)
     const [silenciado, setSilenciado] = useState(false)
-    const [usuario, setUsuario] = useState<any>(null)
+    const [usuario, setUsuario] = useState<Usuario>()
+    const [sideMenuOpen, setSideMenuOpen] = useState(false)
 
     const router = useRouter()
     const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -120,7 +123,7 @@ export default function AsistentePage() {
                 mediaRecorder.stop()
                 setGrabando(false)
             }
-        }, 12000)
+        }, 8000)
     }, [silenciado])
 
     const detenerGrabacion = () => {
@@ -151,22 +154,39 @@ export default function AsistentePage() {
     }
 
     return (
-        <div className="grid grid-cols-[300px_1fr] min-h-full">
-            <SideMenu />
-            <div className="flex flex-col min-h-full items-center p-16 mx-auto">
+        <div className="flex min-h-screen lg:grid lg:grid-cols-[300px_1fr]">
+            {/* Mobile Menu Button */}
+            <button
+                className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-base-100 shadow-lg lg:hidden"
+                onClick={() => setSideMenuOpen(!sideMenuOpen)}
+            >
+                {sideMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {/* Side Menu - Mobile Overlay */}
+            <div className={`fixed inset-0 z-40 lg:relative lg:z-auto ${sideMenuOpen ? "block" : "hidden"} lg:block`}>
+                <div className="absolute inset-0 bg-black/50 lg:hidden" onClick={() => setSideMenuOpen(false)} />
+                <div className="relative w-80 h-full bg-base-100 lg:w-full">
+                    <SideMenu />
+                </div>
+            </div>
+
+            <div className="flex flex-col items-center justify-center flex-1 p-4 mx-auto sm:p-8 lg:p-16">
                 {/* Header */}
-                <div className="mb-12 text-center flex flex-col items-center gap-5">
-                    <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary">
-                        <BotMessageSquare className="w-10 h-10" />
-                    </div>
-                    <div>
-                        <h1 className="mb-2 text-3xl font-bold text-primary-content/60">Hola, {usuario.nombre}</h1>
-                        <p className="text-base-content/70">Presiona el micrófono y comienza a hablar</p>
+                <div className="mb-8 text-center sm:mb-12">
+                    <div className="flex flex-col items-center gap-3 sm:gap-5">
+                        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary sm:w-20 sm:h-20">
+                            <BotMessageSquare className="w-8 h-8 sm:w-10 sm:h-10" />
+                        </div>
+                        <div>
+                            <h1 className="mb-2 text-2xl font-bold text-primary-content/60 sm:text-3xl">Hola, {usuario.nombre}</h1>
+                            <p className="text-sm text-base-content/70 sm:text-base">Presiona el micrófono y comienza a hablar</p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Botón principal */}
-                <div className="relative mb-12">
+                <div className="relative mb-8 sm:mb-12">
                     {estado === "escuchando" && (
                         <>
                             <div className="absolute inset-0 border-4 rounded-full opacity-75 border-error animate-ping"></div>
@@ -179,7 +199,7 @@ export default function AsistentePage() {
                     )}
 
                     <button
-                        className={`btn btn-circle w-32 h-32 text-2xl relative overflow-hidden transition-all duration-300 ${estado === "escuchando"
+                        className={`btn btn-circle w-24 h-24 text-xl relative overflow-hidden transition-all duration-300 sm:w-32 sm:h-32 sm:text-2xl ${estado === "escuchando"
                                 ? "btn-error scale-110"
                                 : estado === "procesando"
                                     ? "btn-warning"
@@ -190,56 +210,56 @@ export default function AsistentePage() {
                         onClick={grabando ? detenerGrabacion : iniciarGrabacion}
                     >
                         {estado === "procesando" ? (
-                            <span className="loading loading-spinner loading-lg"></span>
+                            <span className="loading loading-spinner loading-md sm:loading-lg"></span>
                         ) : estado === "escuchando" ? (
-                            <MicOff className="w-12 h-12" />
+                            <MicOff className="w-8 h-8 sm:w-12 sm:h-12" />
                         ) : estado === "hablando" ? (
-                            <Volume2 className="w-12 h-12" />
+                            <Volume2 className="w-8 h-8 sm:w-12 sm:h-12" />
                         ) : (
-                            <Mic className="w-12 h-12" />
+                            <Mic className="w-8 h-8 sm:w-12 sm:h-12" />
                         )}
                     </button>
                 </div>
 
                 {/* Estado */}
-                <div className="mb-8 text-center">
+                <div className="mb-6 text-center sm:mb-8">
                     {estado === "escuchando" && (
                         <div className="alert alert-info">
-                            <Volume2 className="w-5 h-5" />
-                            <span>Escuchando... Habla ahora</span>
+                            <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="text-sm sm:text-base">Escuchando... Habla ahora</span>
                         </div>
                     )}
                     {estado === "procesando" && (
                         <div className="alert alert-warning">
                             <span className="loading loading-spinner loading-sm"></span>
-                            <span>Procesando tu solicitud...</span>
+                            <span className="text-sm sm:text-base">Procesando tu solicitud...</span>
                         </div>
                     )}
                     {estado === "hablando" && (
                         <div className="alert alert-info">
-                            <Volume2 className="w-5 h-5" />
-                            <span>Reproduciendo respuesta...</span>
+                            <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="text-sm sm:text-base">Reproduciendo respuesta...</span>
                         </div>
                     )}
                     {estado === "esperando" && (
                         <div className="alert">
-                            <Mic className="w-5 h-5" />
-                            <span>Listo para escuchar</span>
+                            <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                            <span className="text-sm sm:text-base">Listo para escuchar</span>
                         </div>
                     )}
                 </div>
 
                 {/* Mensaje usuario */}
                 {transcripcion && (
-                    <div className="w-full max-w-2xl mb-6 shadow-lg card bg-base-200">
-                        <div className="card-body">
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                    <CircleUser className="w-5 h-5" />
+                    <div className="w-full max-w-2xl mb-4 shadow-lg card bg-base-200 sm:mb-6">
+                        <div className="p-3 card-body sm:p-4">
+                            <div className="flex gap-2 sm:gap-3">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary sm:w-8 sm:h-8">
+                                    <CircleUser className="w-3 h-3 sm:w-5 sm:h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="text-sm font-semibold text-base-content/70">Tu mensaje:</h3>
-                                    <p>{transcripcion}</p>
+                                    <h3 className="text-xs font-semibold text-base-content/70 sm:text-sm">Tu mensaje:</h3>
+                                    <p className="text-sm sm:text-base">{transcripcion}</p>
                                 </div>
                             </div>
                         </div>
@@ -248,18 +268,18 @@ export default function AsistentePage() {
 
                 {/* Respuesta IA */}
                 {respuesta && (
-                    <div className="w-full max-w-2xl mb-6 shadow-lg card bg-primary/10">
-                        <div className="card-body">
-                            <div className="flex gap-3">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                    <BotMessageSquare className="w-5 h-5" />
+                    <div className="w-full max-w-2xl mb-4 shadow-lg card bg-primary/10 sm:mb-6">
+                        <div className="p-3 card-body sm:p-4">
+                            <div className="flex gap-2 sm:gap-3">
+                                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary sm:w-8 sm:h-8">
+                                    <BotMessageSquare className="w-3 h-3 sm:w-5 sm:h-5" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="text-sm font-semibold text-base-content/70">Respuesta:</h3>
-                                        {estado === "hablando" && <Volume2 className="w-4 h-4 text-primary animate-pulse" />}
+                                        <h3 className="text-xs font-semibold text-base-content/70 sm:text-sm">Respuesta:</h3>
+                                        {estado === "hablando" && <Volume2 className="w-3 h-3 text-primary animate-pulse sm:w-4 sm:h-4" />}
                                     </div>
-                                    <p>{respuesta}</p>
+                                    <p className="text-sm sm:text-base">{respuesta}</p>
                                 </div>
                             </div>
                         </div>
@@ -267,30 +287,32 @@ export default function AsistentePage() {
                 )}
 
                 {/* Botones */}
-                <div className="flex gap-4">
+                <div className="flex flex-wrap justify-center gap-2 sm:gap-4">
                     <button
-                        className={`btn btn-outline btn-sm ${grabando ? "text-error" : ""}`}
+                        className={`btn btn-outline btn-xs sm:btn-sm ${grabando ? "text-error" : ""}`}
                         onClick={detenerGrabacion}
                         disabled={estado === "esperando"}
                     >
-                        <CirclePause className="w-4 h-4" />
-                        Detener conversación
+                        <CirclePause className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Detener conversación</span>
+                        <span className="sm:hidden">Detener</span>
                     </button>
                     <button
-                        className="btn btn-outline btn-sm"
+                        className="btn btn-outline btn-xs sm:btn-sm"
                         onClick={reiniciarGrabacion}
                         disabled={estado === "escuchando" || estado === "procesando"}
                     >
-                        <RotateCcw className="w-4 h-4" />
-                        Nueva Conversación
+                        <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Nueva Conversación</span>
+                        <span className="sm:hidden">Nueva</span>
                     </button>
-                    <button className="btn btn-outline btn-sm" onClick={() => setSilenciado(!silenciado)}>
-                        {silenciado ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    <button className="btn btn-outline btn-xs sm:btn-sm" onClick={() => setSilenciado(!silenciado)}>
+                        {silenciado ? <VolumeX className="w-3 h-3 sm:w-4 sm:h-4" /> : <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />}
                         {silenciado ? "Silenciado" : "Silenciar"}
                     </button>
-                    <button className="btn btn-outline btn-sm">
-                        <Settings className="w-4 h-4" />
-                        Config
+                    <button className="btn btn-outline btn-xs sm:btn-sm">
+                        <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Config</span>
                     </button>
                 </div>
             </div>

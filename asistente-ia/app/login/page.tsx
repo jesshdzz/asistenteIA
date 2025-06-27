@@ -77,30 +77,30 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="container mx-auto my-32">
-            <div className="max-w-md mx-auto mt-10 rounded-lg shadow-lg bg-gradient-to-r from-gray-100 via-white-100 to-gray-50">
-                <div className="flex flex-col items-center justify-center gap-5 p-6">
-                    <div className="flex flex-col items-center justify-center gap-3 mb-6">
-                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/45">
-                            <LogIn className="w-6 h-6 text-primary-content/60" />
+        <div className="container px-4 mx-auto my-8 sm:my-16 md:my-32">
+            <div className="w-full max-w-md mx-auto mt-6 rounded-lg shadow-lg bg-gradient-to-r from-gray-100 via-white-100 to-gray-50 sm:mt-10">
+                <div className="flex flex-col items-center justify-center gap-4 p-4 sm:gap-5 sm:p-6">
+                    <div className="flex flex-col items-center justify-center gap-2 mb-4 sm:gap-3 sm:mb-6">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/45 sm:w-12 sm:h-12">
+                            <LogIn className="w-5 h-5 text-primary-content/60 sm:w-6 sm:h-6" />
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold tracking-wide">Iniciar Sesión</div>
-                            <div className="text-sm">Ingresa tus credenciales para acceder a tu cuenta</div>
+                            <div className="text-xl font-bold tracking-wide sm:text-2xl">Iniciar Sesión</div>
+                            <div className="text-xs sm:text-sm">Ingresa tus credenciales para acceder a tu cuenta</div>
                         </div>
                     </div>
 
                     {error && (
                         <div className="w-full alert alert-error">
-                            <span className="text-sm">{error}</span>
+                            <span className="text-xs sm:text-sm">{error}</span>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="w-full">
                         <fieldset className="fieldset">
                             <legend className="fieldset-legend">Correo electronico</legend>
-                            <div className="flex items-center gap-3">
-                                <Mail className="w-5 h-5" />
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
                                 <input
                                     className="input input-ghost"
                                     type="email"
@@ -113,8 +113,8 @@ export default function LoginPage() {
                         </fieldset>
                         <fieldset className="fieldset">
                             <legend className="fieldset-legend">Contraseña</legend>
-                            <div className="flex items-center gap-3">
-                                <Lock className="w-5 h-5" />
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
                                 <input
                                     className="input input-ghost"
                                     type={showPassword ? "text" : "password"}
@@ -125,31 +125,35 @@ export default function LoginPage() {
                                 />
                                 <button
                                     type="button"
-                                    className="rounded-md hover:bg-transparent hover:text-accent-content/80"
+                                    className="p-1 rounded-md hover:bg-transparent hover:text-accent-content/80"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    {showPassword ? (
+                                        <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    ) : (
+                                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    )}
                                 </button>
                             </div>
                             <Link
                                 href={"#"}
-                                className="px-0 text-sm font-normal underline-offset-4 hover:underline text-primary-content/50"
+                                className="px-0 text-xs font-normal underline-offset-4 hover:underline text-primary-content/50 sm:text-sm"
                             >
                                 ¿Olvidaste tu contraseña?
                             </Link>
                         </fieldset>
 
-                        <div className="flex items-center mb-4">
+                        <div className="flex items-center mb-3 sm:mb-4">
                             <input
                                 type="checkbox"
                                 className="checkbox checkbox-primary checkbox-sm"
                                 checked={formData.rememberMe}
                                 onChange={(e) => handleInputChange("rememberMe", e.target.checked)}
                             />
-                            <label className="ml-2 text-sm">Recordarme</label>
+                            <label className="ml-2 text-xs sm:text-sm">Recordarme</label>
                         </div>
 
-                        <div className="flex flex-col items-center py-5">
+                        <div className="flex flex-col items-center py-4 sm:py-5">
                             <button type="submit" className="w-full btn btn-ghost" disabled={isLoading}>
                                 {isLoading ? (
                                     <>
@@ -160,7 +164,7 @@ export default function LoginPage() {
                                     "Iniciar Sesión"
                                 )}
                             </button>
-                            <div className="text-sm text-center text-muted-foreground">
+                            <div className="text-xs text-center text-muted-foreground sm:text-sm">
                                 ¿No tienes una cuenta?{" "}
                                 <Link
                                     href={"/signup"}
@@ -173,10 +177,10 @@ export default function LoginPage() {
                     </form>
 
                     {/* Credenciales de prueba */}
-                    <div className="w-full p-3 mt-4 text-xs border rounded-lg bg-base-200 border-base-300">
-                        <div className="font-semibold mb-1">Credenciales de prueba:</div>
-                        <div>Email: pro@gmail.com</div>
-                        <div>Contraseña: hola123</div>
+                    <div className="w-full p-2 mt-3 text-xs border rounded-lg bg-base-200 border-base-300 sm:p-3 sm:mt-4">
+                        <div className="mb-1 font-semibold">Credenciales de prueba:</div>
+                        <div>Email: jesus@ejemplo.com</div>
+                        <div>Contraseña: jesus123</div>
                     </div>
                 </div>
             </div>
